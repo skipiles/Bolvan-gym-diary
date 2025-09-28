@@ -26,14 +26,15 @@ jobs:
 
       - name: Build the project
         run: npm run build
+      # ... другие ssшаги (checkout, установка Node.js, сборка проекта)
 
       - name: Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v4 # Обновили версию
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3 # Заменили действие
         with:
-          path: './dist' # ← ВАЖНО: для Vite это 'dist', а не 'build'
+          path: './dist' # Путь к вашей собранной папке
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4 # Обновили версию
