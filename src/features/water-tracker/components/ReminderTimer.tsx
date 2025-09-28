@@ -63,7 +63,7 @@ export const ReminderTimer: React.FC<Props> = ({
   // Воспроизведение звука при активном напоминании
   useEffect(() => {
     if (isReminderActive && soundEnabled) {
-      const audio = new Audio('/sounds/rampage-song.mp3')
+      const audio = new Audio('/sounds/social-credit.mp3')
       audio.loop = true
       audio.volume = 0.7
 
