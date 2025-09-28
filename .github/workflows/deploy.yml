@@ -1,22 +1,12 @@
-name: Deploy Vite React App to GitHub Pages
+name: Build and Deploy Node.js Project
 
 on:
   push:
-    branches: ['main']
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      # url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,13 +14,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20' # Укажите вашу версию Node.js
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build the project
-        run: npm run build
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build # Замените на вашу команду сборки, если она отличается
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -38,7 +27,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist' # ← ВАЖНО: для Vite это 'dist', а не 'build'
+          path: './dist' # Укажите папку с результатом сборки (например, 'build', 'out')
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
