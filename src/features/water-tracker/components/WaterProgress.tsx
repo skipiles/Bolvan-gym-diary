@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@mui/material'
 import { Delete } from '@mui/icons-material'
-import { useSound } from '@shared/hooks/useSound'
+import { useInstantSound } from '@/shared/hooks/useInstantSound'
 
 interface Props {
   current: number
@@ -26,7 +26,7 @@ export const WaterProgress: React.FC<Props> = ({
   onReset,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
-  const playSound = useSound(
+  const playSound = useInstantSound(
     import.meta.env.BASE_URL + 'sounds/water-click.mp3'
   )
 

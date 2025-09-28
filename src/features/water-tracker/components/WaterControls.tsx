@@ -10,7 +10,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material'
-import { useSound } from '@shared/hooks/useSound'
+import { useInstantSound } from '@/shared/hooks/useInstantSound'
 
 const predefinedAmounts = [250, 500, 700, 1000]
 
@@ -23,7 +23,7 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Звук при нажатии на кнопку
-  const playButtonSound = useSound(
+  const playButtonSound = useInstantSound(
     import.meta.env.BASE_URL + 'sounds/water-click.mp3'
   )
 

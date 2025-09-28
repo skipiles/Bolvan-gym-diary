@@ -15,7 +15,7 @@ import {
   useTheme,
 } from '@mui/material'
 import { NotificationsActive, Schedule } from '@mui/icons-material'
-import { useSound } from '@shared/hooks/useSound'
+import { useInstantSound } from '@/shared/hooks/useInstantSound'
 
 interface Props {
   interval: number
@@ -48,7 +48,7 @@ export const ReminderTimer: React.FC<Props> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const playSound = useSound(
+  const playSound = useInstantSound(
     import.meta.env.BASE_URL + 'sounds/water-click.mp3'
   )
 
