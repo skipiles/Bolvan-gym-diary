@@ -31,5 +31,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
+
+    <script>
+      // Предзагрузка звуков через JavaScript
+      const soundsToPreload = [
+        'sounds/layout-click.mp3',
+        'sounds/water-click.mp3',
+        'sounds/social-credit.mp3',
+      ]
+
+      soundsToPreload.forEach((sound) => {
+        const audio = new Audio()
+        audio.src = sound
+        audio.preload = 'auto'
+      })
+    </script>
   </body>
 </html>
