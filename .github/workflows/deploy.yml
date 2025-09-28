@@ -24,8 +24,10 @@ jobs:
       - name: Install dependencies and build
         run: |
           npm install
-          npm run build # Замените на вашу команду сборки, если она отличается
+          npm run build 
 
+           - name: List files in dist directory
+             run: ls -la ./dist
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
