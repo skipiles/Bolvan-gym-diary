@@ -23,7 +23,7 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const playClickSound = useSound(
-    import.meta.env.BASE_URL + '/sounds/layout-click.mp3'
+    import.meta.env.BASE_URL + 'sounds/layout-click.mp3'
   )
 
   const handleItemClick = (path: string) => {

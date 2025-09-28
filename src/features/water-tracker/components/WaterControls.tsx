@@ -24,7 +24,7 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
 
   // Звук при нажатии на кнопку
   const playButtonSound = useSound(
-    import.meta.env.BASE_URL + '/sounds/water-click.mp3'
+    import.meta.env.BASE_URL + 'sounds/water-click.mp3'
   )
 
   const handlePredefinedAmount = (amount: number) => {
