@@ -26,7 +26,9 @@ export const WaterProgress: React.FC<Props> = ({
   onReset,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
-  const playSound = useSound('/sounds/water-click.mp3')
+  const playSound = useSound(
+    import.meta.env.BASE_URL + '/sounds/water-click.mp3'
+  )
 
   const handleReset = () => {
     playSound()

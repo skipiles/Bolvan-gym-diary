@@ -22,7 +22,9 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
   const location = useLocation()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const playClickSound = useSound('/sounds/layout-click.mp3')
+  const playClickSound = useSound(
+    import.meta.env.BASE_URL + '/sounds/layout-click.mp3'
+  )
 
   const handleItemClick = (path: string) => {
     if (location.pathname !== path) {

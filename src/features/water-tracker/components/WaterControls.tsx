@@ -23,7 +23,9 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Звук при нажатии на кнопку
-  const playButtonSound = useSound('/sounds/water-click.mp3')
+  const playButtonSound = useSound(
+    import.meta.env.BASE_URL + '/sounds/water-click.mp3'
+  )
 
   const handlePredefinedAmount = (amount: number) => {
     playButtonSound()

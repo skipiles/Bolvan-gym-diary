@@ -48,7 +48,9 @@ export const ReminderTimer: React.FC<Props> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const playSound = useSound('/sounds/water-click.mp3')
+  const playSound = useSound(
+    import.meta.env.BASE_URL + '/sounds/water-click.mp3'
+  )
 
   // Функция для форматирования интервала в читаемый вид
   const formatIntervalLabel = (minutes: number) => {
@@ -63,7 +65,9 @@ export const ReminderTimer: React.FC<Props> = ({
   // Воспроизведение звука при активном напоминании
   useEffect(() => {
     if (isReminderActive && soundEnabled) {
-      const audio = new Audio('/sounds/social-credit.mp3')
+      const audio = new Audio(
+        import.meta.env.BASE_URL + '/sounds/social-credit.mp3'
+      )
       audio.loop = true
       audio.volume = 0.7
 
