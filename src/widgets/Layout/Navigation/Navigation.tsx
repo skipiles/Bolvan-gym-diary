@@ -11,7 +11,8 @@ import {
 } from '@mui/material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { navigationItems } from '@app/providers/ConfigRoute'
-import { useSound } from '@shared/hooks/useSound'
+// import { useSound } from '@shared/hooks/useSound'
+import { useInstantSound } from '@/shared/hooks/useInstantSound'
 
 interface Props {
   onItemClick?: () => void
@@ -22,7 +23,7 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
   const location = useLocation()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const playClickSound = useSound(
+  const playClickSound = useInstantSound(
     import.meta.env.BASE_URL + 'sounds/layout-click.mp3'
   )
 
@@ -31,12 +32,10 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
       playClickSound()
     }
 
-    setTimeout(() => {
-      navigate(path)
-      if (onItemClick) {
-        onItemClick()
-      }
-    }, 50)
+    navigate(path)
+    if (onItemClick) {
+      onItemClick()
+    }
   }
 
   return (
