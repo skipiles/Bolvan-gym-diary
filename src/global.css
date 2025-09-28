@@ -1,0 +1,69 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  -webkit-text-size-adjust: 100%; /* Предотвращает масштабирование текста на iOS */
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f5f5f7;
+  overflow-x: hidden;
+}
+
+/* Улучшаем скролл на мобильных */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+/* Убираем стандартные стили */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent; /* Убирает синий фон при тапе на iOS */
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Улучшаем читаемость на маленьких экранах */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Особые стили для iPhone 12 Mini (375px) */
+@media (max-width: 375px) {
+  .MuiContainer-root {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* Предотвращает зум при фокусе на iOS */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; /* Предотвращает зум в iOS */
+  }
+}
