@@ -1,4 +1,4 @@
-name: Deploy React App to GitHub Pages
+name: Deploy Vite React App to GitHub Pages
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: './build' # GitHub Actions загрузит папку 'build'
+        path: './dist'  # ← ВАЖНО: для Vite это 'dist', а не 'build'
 
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v4
