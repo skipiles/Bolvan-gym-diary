@@ -3,14 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <title>Bolvan Gym</title>
-    <script type="module">
+    <script>
       // Сохраняем путь, по которому пользователь попал на страницу
-      sessionStorage.redirect = location.pathname
+      sessionStorage.redirect = location.pathname + location.search
     </script>
     <meta http-equiv="refresh" content="0; URL=/" />
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <p>Redirecting... If nothing happens, <a href="/">click here</a>.</p>
+    <noscript>
+      <h1>Bolvan Gym Diary</h1>
+      <p>You need to enable JavaScript to run this app.</p>
+      <p><a href="/">Click here to go to homepage</a></p>
+    </noscript>
+
+    <script>
+      // Немедленное перенаправление для случаев, если JS не сработал
+      window.location.href = '/'
+    </script>
   </body>
 </html>
