@@ -295,11 +295,18 @@ export const ReminderTimer: React.FC<Props> = ({
       <FormControlLabel
         control={
           <Switch
+            sx={{
+              ml: 2,
+            }}
             checked={soundEnabled}
             onChange={(e) => onSoundToggle(e.target.checked)}
           />
         }
-        label={<Typography variant="body2">Звуковые уведомления</Typography>}
+        label={
+          <Typography sx={{ ml: 1 }} variant="body2">
+            Звуковые уведомления
+          </Typography>
+        }
       />
 
       <Box
