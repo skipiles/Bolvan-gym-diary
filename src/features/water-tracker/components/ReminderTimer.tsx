@@ -53,14 +53,11 @@ export const ReminderTimer: React.FC<Props> = ({
   // Функция для форматирования интервала в читаемый вид
   const formatIntervalLabel = (minutes: number) => {
     if (minutes === 1) return '1 мин'
-    if (minutes === 30) return `30 мин`
-    if (minutes === 60) return '1 час'
-    if (minutes === 90) return '1,5 часа'
-    if (minutes === 120) return '2 часа'
-    // const hours = Math.floor(minutes / 60)
-    // const remainingMinutes = minutes % 60
-    // if (remainingMinutes === 0) return `${hours} час${hours > 1 ? 'а' : ''}`
-    // return `${hours} ч ${remainingMinutes} м`
+
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    if (remainingMinutes === 0) return `${hours} час${hours > 1 ? 'а' : ''}`
+    return `${hours} ч ${remainingMinutes} м`
   }
 
   // Воспроизведение звука при активном напоминании
@@ -288,7 +285,7 @@ export const ReminderTimer: React.FC<Props> = ({
           step={null}
           marks={intervalOptions.map((option) => ({
             value: option,
-            label: formatIntervalLabel(option),
+            // label: formatIntervalLabel(option),
           }))}
           valueLabelDisplay="auto"
           valueLabelFormat={formatIntervalLabel}
