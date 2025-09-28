@@ -1,9 +1,9 @@
 {
   "name": "bolvan-gym-diary",
-  "homepage": "https://skipiles.github.io/Bolvan-gym-diary",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://skipiles.github.io/Bolvan-gym-diary",
   "scripts": {
      "predeploy": "npm run build",
        "deploy": "gh-pages -d dist",
