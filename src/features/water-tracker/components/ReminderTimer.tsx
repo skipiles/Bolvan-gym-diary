@@ -49,7 +49,7 @@ export const ReminderTimer: React.FC<Props> = ({
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const playSound = useInstantSound(
-    import.meta.env.BASE_URL + 'sounds/water-click.mp3'
+    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3'
   )
 
   // Функция для форматирования интервала в читаемый вид
