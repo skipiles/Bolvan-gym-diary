@@ -38,6 +38,13 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
     }
   }
 
+  const getIsSelected = (itemPath: string) => {
+    if (itemPath === '/') {
+      return location.pathname === '/'
+    }
+    return location.pathname === itemPath
+  }
+
   return (
     <Box
       sx={{
@@ -78,7 +85,8 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
         }}
       >
         {navigationItems.map((item) => {
-          const isSelected = location.pathname === item.path
+          const isSelected = getIsSelected(item.path)
+          const activeColor = item.activeColor || '#8E8E93'
 
           return (
             <ListItem key={item.path} sx={{ padding: '2px' }}>
@@ -87,12 +95,12 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
                 sx={{
                   borderRadius: '10px',
                   backgroundColor: isSelected
-                    ? 'rgba(0, 122, 255, 0.1)'
+                    ? '${activeColor}10'
                     : 'transparent',
-                  color: isSelected ? '#007AFF' : '#000000',
+                  color: isSelected ? activeColor : '#000000',
                   '&:hover': {
                     backgroundColor: isSelected
-                      ? 'rgba(0, 122, 255, 0.15)'
+                      ? '${activeColor}15'
                       : 'rgba(0, 0, 0, 0.04)',
                   },
                   transition: 'all 0.2s ease',
@@ -122,7 +130,7 @@ const Navigation: React.FC<Props> = ({ onItemClick }) => {
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      backgroundColor: '#007AFF',
+                      backgroundColor: activeColor,
                       marginLeft: 'auto',
                     }}
                   />
