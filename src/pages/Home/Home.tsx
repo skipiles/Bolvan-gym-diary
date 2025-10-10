@@ -5,14 +5,11 @@ import {
   Card,
   CardContent,
   LinearProgress,
-  useTheme,
 } from '@mui/material'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
 
 const Home: React.FC = () => {
-  const theme = useTheme()
-
   // Хардкод данные (позже заменим на реальные)
   const waterData = {
     daily: { current: 1500, goal: 2000 }, // в мл
