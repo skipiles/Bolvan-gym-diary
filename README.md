@@ -40,7 +40,7 @@ git clone https://github.com/skipiles/Bolvan-gym-diary
 # Установка зависимостей
 npm install
 
-# Установка Material UI и зависимостей:cite[3]:cite[4]
+# Установка Material UI и зависимостей
 npm install @mui/material @emotion/react @emotion/styled
 npm install @mui/icons-material # для иконок
 
