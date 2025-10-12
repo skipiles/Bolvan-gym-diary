@@ -1,69 +1,53 @@
-# React + TypeScript + Vite
+# Fitness Progress Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Мой персональный пет-проект — приложение для комплексного отслеживания прогресса в тренажерном зале. Создаю для собственного использования с целью удобного мониторинга всех аспектов тренировок и здоровья.
 
-Currently, two official plugins are available:
+## 🎯 Функциональность (план)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Трекер питания** — учет БЖУ и калорий
+- **Гидробаланс** — контроль потребления воды
+- **Дневник тренировок** — отслеживание рабочих весов в тренажерах
+- **Сон и восстановление** — мониторинг качества и продолжительности сна
+- **Статистика** — визуализация прогресса в личном кабинете
 
-## Expanding the ESLint configuration
+## 🎨 Дизайн и Интерфейс
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+В качестве дизайн-системы используется **Material UI (MUI)** — мощная библиотека React-компонентов, реализующая Google Material Design:cite[1]:cite[8].
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+**Особенности внешнего вида:**
+- **Адаптивный интерфейс**: Готовые стили оптимизированы для мобильных устройств:cite[8].
+- **iOS-эстетика**: Компоненты Material UI будут кастомизированы для визуального сходства с нативными iOS-приложениями (закругленные углы, типографика, отступы).
+- **Темная/Светлая темы**: Поддержка системных предпочтений пользователя.
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## 🚀 Технологический стек
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Frontend
+- **React** + **TypeScript**
+- **Vite** — сборка и разработка
+- **Redux Toolkit** — управление состоянием
+- **Material UI (MUI)** — компоненты и дизайн-система:cite[1]
+- **Emotion** — стилизация (используется MUI по умолчанию):cite[4]
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Backend (в разработке)
+- Планируется **Node.js + Express** или **Python FastAPI**
+- **PostgreSQL** — база данных
+- **JWT** — аутентификация
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 📦 Установка и запуск
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+```bash
+# Клонирование репозитория
+git clone https://github.com/skipiles/Bolvan-gym-diary
+
+# Установка зависимостей
+npm install
+
+# Установка Material UI и зависимостей:cite[3]:cite[4]
+npm install @mui/material @emotion/react @emotion/styled
+npm install @mui/icons-material # для иконок
+
+# Запуск в режиме разработки
+npm run dev
+
+# Сборка для производства
+npm run build
