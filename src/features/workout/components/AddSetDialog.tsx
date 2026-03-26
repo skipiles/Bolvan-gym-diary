@@ -14,6 +14,8 @@ import {
   Paper,
   Switch,
   FormControlLabel,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import { Add, Delete, Close, FitnessCenter } from '@mui/icons-material'
 import type { Exercise } from '../data/exercises'
@@ -38,6 +40,8 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
   onAdd,
   exercise,
 }) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [sets, setSets] = useState<SetInput[]>([
     { reps: 0, weight: 0, isBodyweight: false },
   ])
@@ -67,7 +71,7 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
 
   const handleSetChange = (
     index: number,
-    field: keyof SetInput,
+    field: 'reps' | 'weight',
     value: number,
   ) => {
     const updated = [...sets]
@@ -97,8 +101,8 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
           borderRadius: '20px',
           backgroundColor: '#FFFFFF',
           width: 'auto',
-          minWidth: '280px',
-          maxWidth: '360px',
+          minWidth: isMobile ? '280px' : '300px',
+          maxWidth: isMobile ? '90vw' : '360px',
           margin: 2,
         },
       }}
@@ -108,32 +112,32 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          p: 1.5,
+          p: isMobile ? 1.5 : 2,
           borderBottom: '1px solid #C6C6C8',
         }}
       >
         <Box>
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 600, fontSize: '16px' }}
+            sx={{ fontWeight: 600, fontSize: isMobile ? '15px' : '16px' }}
           >
             {exercise.name}
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: '#8E8E93', fontSize: '11px' }}
+            sx={{ color: '#8E8E93', fontSize: isMobile ? '10px' : '11px' }}
           >
             {muscleGroupName}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: '#007AFF' }}>
+        <IconButton onClick={onClose} size="small" sx={{ color: '#FF3B30' }}>
           <Close fontSize="small" />
         </IconButton>
       </DialogTitle>
 
       <DialogContent
         sx={{
-          p: 1.5,
+          p: isMobile ? 1.5 : 2,
           overflowY: 'auto',
           maxHeight: '50vh',
           '&::-webkit-scrollbar': {
@@ -155,7 +159,10 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
               <Switch
                 size="small"
                 checked={useBodyweight}
-                onChange={(e) => setUseBodyweight(e.target.checked)}
+                onChange={(e) => {
+                  setUseBodyweight(e.target.checked)
+                  setSets(sets.map((set) => ({ ...set, weight: 0 })))
+                }}
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': {
                     color: '#FF3B30',
@@ -300,7 +307,9 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
         </Button>
       </DialogContent>
 
-      <DialogActions sx={{ p: 1.5, borderTop: '1px solid #C6C6C8' }}>
+      <DialogActions
+        sx={{ p: isMobile ? 1.5 : 2, borderTop: '1px solid #C6C6C8' }}
+      >
         <Button
           onClick={onClose}
           size="small"
