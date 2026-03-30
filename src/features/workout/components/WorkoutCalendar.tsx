@@ -1,5 +1,12 @@
 import React from 'react'
-import { Box, Typography, IconButton, Paper } from '@mui/material'
+import {
+  Box,
+  Typography,
+  IconButton,
+  Paper,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import {
   format,
@@ -25,6 +32,8 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
   onSelectDate,
   hasWorkoutOnDate,
 }) => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [currentMonth, setCurrentMonth] = React.useState(selectedDate)
 
   const days = eachDayOfInterval({
@@ -37,15 +46,11 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
 
-  // Вычислим пустые ячейки в начале месяца (смещение)
-  const firstDayOfMonth = startOfMonth(currentMonth)
-  const startOffset = (firstDayOfMonth.getDay() + 6) % 7 // Пн=0, Вс=6
-
   return (
     <Paper
       sx={{
-        p: 2,
-        borderRadius: '12px',
+        p: isMobile ? 1.5 : 2,
+        borderRadius: '16px',
         border: '1px solid #C6C6C8',
         backgroundColor: '#FFFFFF',
       }}
@@ -58,13 +63,22 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
           mb: 2,
         }}
       >
-        <IconButton onClick={handlePrevMonth}>
+        <IconButton
+          onClick={handlePrevMonth}
+          size={isMobile ? 'small' : 'medium'}
+        >
           <ChevronLeft />
         </IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Typography
+          variant={isMobile ? 'subtitle1' : 'h6'}
+          sx={{ fontWeight: 600 }}
+        >
           {format(currentMonth, 'LLLL yyyy', { locale: ru })}
         </Typography>
-        <IconButton onClick={handleNextMonth}>
+        <IconButton
+          onClick={handleNextMonth}
+          size={isMobile ? 'small' : 'medium'}
+        >
           <ChevronRight />
         </IconButton>
       </Box>
@@ -74,30 +88,29 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
         sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: 1,
+          gap: isMobile ? 0.5 : 1,
           mb: 1,
         }}
       >
         {weekDays.map((day) => (
           <Typography
             key={day}
-            variant="caption"
-            sx={{ textAlign: 'center', fontWeight: 500 }}
+            variant={isMobile ? 'caption' : 'body2'}
+            sx={{ textAlign: 'center', fontWeight: 500, color: '#8E8E93' }}
           >
             {day}
           </Typography>
         ))}
       </Box>
 
-      {/* Календарная сетка */}
+      {/* Дни месяца */}
       <Box
-        sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: isMobile ? 0.5 : 1,
+        }}
       >
-        {/* Пустые ячейки для выравнивания */}
-        {Array.from({ length: startOffset }).map((_, i) => (
-          <Box key={`empty-${i}`} sx={{ p: 1 }} />
-        ))}
-
         {days.map((day) => {
           const isSelected = isSameDay(day, selectedDate)
           const isCurrentMonth = isSameMonth(day, currentMonth)
@@ -112,7 +125,7 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                p: 1,
+                aspectRatio: '1 / 1',
                 borderRadius: '10px',
                 backgroundColor: isSelected ? '#FF3B30' : 'transparent',
                 color: isSelected
@@ -122,10 +135,12 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
                     : '#8E8E93',
                 fontWeight: isToday(day) ? 700 : 400,
                 position: 'relative',
+                transition: 'all 0.2s ease',
+                fontSize: isMobile ? '13px' : '14px',
                 '&:hover': {
                   backgroundColor: isSelected
                     ? '#FF3B30'
-                    : 'rgba(0, 122, 255, 0.1)',
+                    : 'rgba(255, 59, 48, 0.1)',
                 },
               }}
             >
@@ -134,9 +149,9 @@ export const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({
                 <Box
                   sx={{
                     position: 'absolute',
-                    bottom: 2,
-                    width: 4,
-                    height: 4,
+                    bottom: isMobile ? 2 : 4,
+                    width: isMobile ? 3 : 4,
+                    height: isMobile ? 3 : 4,
                     borderRadius: '50%',
                     backgroundColor: '#FF3B30',
                   }}

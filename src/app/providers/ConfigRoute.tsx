@@ -2,16 +2,31 @@ import type { RouteObject } from 'react-router-dom'
 import Layout from '@/widgets/AppLayout'
 import Water from '@pages/Water/Water'
 import Workout from '@pages/Workout/Workout'
+import Home from '@pages/Home/Home'
+import { Login } from '@pages/Auth/Login'
+import { Register } from '@pages/Auth/Register'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 import type { ReactNode } from 'react'
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
-import { Home } from '@/pages/Home'
 import HomeIcon from '@mui/icons-material/Home'
 
 export const routesConfig: RouteObject[] = [
   {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/register',
+    element: <Register />,
+  },
+  {
     path: '/',
-    element: <Layout />,
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
@@ -38,7 +53,12 @@ export type NavigationItem = {
 }
 
 export const navigationItems: NavigationItem[] = [
-  { path: '/', title: 'Home', icon: <HomeIcon />, activeColor: '#cd853f' },
+  {
+    path: '/',
+    title: 'Home',
+    icon: <HomeIcon />,
+    activeColor: '#8E8E93',
+  },
   {
     path: '/water',
     title: 'Water',
@@ -49,6 +69,6 @@ export const navigationItems: NavigationItem[] = [
     path: '/workout',
     title: 'Workout',
     icon: <FitnessCenterIcon />,
-    activeColor: '#ff6666',
+    activeColor: '#FF3B30',
   },
 ]

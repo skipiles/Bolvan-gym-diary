@@ -1,129 +1,199 @@
-import { useState, useEffect } from 'react';
-import type {  WaterRecord, AppSettings, WaterState } from '../types';
-import { calculateDailyGoal, getTodayRecords, getTotalWaterToday } from '../utils';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
-const STORAGE_KEY = 'water-tracker-data';
-
-const defaultSettings: AppSettings = {
-  reminderInterval: 60,
-  soundEnabled: true,
-};
-
-const initialState: WaterState = {
-  profile: null,
-  records: [],
-  settings: defaultSettings,
-  isTimerActive: true,
-  timeLeft: 60 * 60,
-  isReminderActive: false,
-};
+interface WaterSettings {
+  reminderInterval: number;
+  soundEnabled: boolean;
+}
 
 export const useWaterTracker = () => {
-  const [state, setState] = useState<WaterState>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const timeLeft = typeof parsed.timeLeft === 'number' ? parsed.timeLeft : 60 * 60;
-      return { ...initialState, ...parsed, timeLeft };
-    }
-    return initialState;
+  const { user, profile } = useAuth();
+  const [totalToday, setTotalToday] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [settings, setSettings] = useState<WaterSettings>({
+    reminderInterval: 30,
+    soundEnabled: true,
   });
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
+  const [isReminderActive, setIsReminderActive] = useState(false);
+  const [loading, setLoading] = useState(true);
+  
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Сохраняем в localStorage
+  // Загрузка данных воды
+  const fetchWaterData = useCallback(async () => {
+    if (!user) {
+      setTotalToday(0);
+      setProgress(0);
+      setLoading(false);
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('water_logs')
+      .select('total_amount')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .single();
+
+    if (!error && data) {
+      const total = data.total_amount || 0;
+      const goal = profile?.daily_water_goal || 2000;
+      setTotalToday(total);
+      setProgress((total / goal) * 100);
+    } else {
+      setTotalToday(0);
+      setProgress(0);
+    }
+    setLoading(false);
+  }, [user, profile]);
+
+  // Загрузка при монтировании и при изменении user/profile
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    fetchWaterData();
+  }, [fetchWaterData]);
 
-  // Таймер обратного отсчета
+  // Добавление воды
+  const addWater = useCallback(async (amount: number) => {
+    if (!user) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const newTotal = totalToday + amount;
+
+    const { error } = await supabase
+      .from('water_logs')
+      .upsert({
+        user_id: user.id,
+        date: today,
+        total_amount: newTotal,
+      }, {
+        onConflict: 'user_id,date'
+      });
+
+    if (!error) {
+      setTotalToday(newTotal);
+      const goal = profile?.daily_water_goal || 2000;
+      setProgress((newTotal / goal) * 100);
+    }
+  }, [user, totalToday, profile]);
+
+  // Сброс воды
+  const resetTodayWater = useCallback(async () => {
+    if (!user) return;
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const { error } = await supabase
+      .from('water_logs')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('date', today);
+
+    if (!error) {
+      setTotalToday(0);
+      setProgress(0);
+    }
+  }, [user]);
+
+  // Загрузка настроек
   useEffect(() => {
-    if (!state.isTimerActive || state.isReminderActive) return;
+    const savedSettings = localStorage.getItem('waterSettings');
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      setSettings(prev => ({ ...prev, ...parsed }));
+      setTimeLeft(parsed.reminderInterval * 60);
+    }
+  }, []);
 
-    const timer = setInterval(() => {
-      setState(prev => {
-        if (prev.timeLeft <= 1) {
-          return { 
-            ...prev, 
-            isReminderActive: true,
-            isTimerActive: false
-          };
+  // Сохранение настроек
+  useEffect(() => {
+    localStorage.setItem('waterSettings', JSON.stringify(settings));
+  }, [settings]);
+
+  // Таймер
+  useEffect(() => {
+    if (!isTimerActive) return;
+
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          setIsReminderActive(true);
+          setIsTimerActive(false);
+          
+          if (settings.soundEnabled) {
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(() => {});
+            } else {
+              const audio = new Audio(import.meta.env.BASE_URL + 'sounds/gta5menu.mp3');
+              audioRef.current = audio;
+              audio.play().catch(() => {});
+            }
+          }
+          
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('💧 Пора пить воду!', {
+              body: 'Выпейте стакан воды для поддержания водного баланса',
+              icon: '/vite.svg'
+            });
+          }
+          
+          return 0;
         }
-        return { ...prev, timeLeft: prev.timeLeft - 1 };
+        return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [state.isTimerActive, state.isReminderActive, state.timeLeft]);
-
-  const setProfile = (weight: number) => {
-    const dailyGoal = calculateDailyGoal(weight);
-    setState(prev => ({
-      ...prev,
-      profile: { weight, dailyGoal },
-    }));
-  };
-
-  const addWater = (amount: number) => {
-    const newRecord: WaterRecord = {
-      id: Date.now().toString(),
-      amount,
-      timestamp: Date.now(),
-      date: new Date().toISOString().split('T')[0],
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, [isTimerActive, settings.soundEnabled]);
 
-    setState(prev => ({
-      ...prev,
-      records: [...prev.records, newRecord],
-      isReminderActive: false,
-      isTimerActive: true,
-      timeLeft: prev.settings.reminderInterval * 60,
-    }));
-  };
+  const startTimer = useCallback(() => {
+    if (isReminderActive) return;
+    setTimeLeft(settings.reminderInterval * 60);
+    setIsTimerActive(true);
+    setIsReminderActive(false);
+  }, [settings.reminderInterval, isReminderActive]);
 
-  // Функция сброса воды за сегодня
-  const resetTodayWater = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setState(prev => ({
-      ...prev,
-      records: prev.records.filter(record => record.date !== today),
-    }));
-  };
+  const stopReminder = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsReminderActive(false);
+    setIsTimerActive(false);
+    setTimeLeft(0);
+  }, []);
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    setState(prev => ({
-      ...prev,
-      settings: { ...prev.settings, ...newSettings },
-      timeLeft: newSettings.reminderInterval ? newSettings.reminderInterval * 60 : prev.timeLeft,
-    }));
-  };
-
-  const stopReminder = () => {
-    setState(prev => ({
-      ...prev,
-      isReminderActive: false,
-      isTimerActive: false,
-    }));
-  };
-
-  const startTimer = () => {
-    setState(prev => ({
-      ...prev,
-      isTimerActive: true,
-      timeLeft: prev.settings.reminderInterval * 60,
-    }));
-  };
-
-  const todayRecords = getTodayRecords(state.records);
-  const totalToday = getTotalWaterToday(state.records);
-  const progress = state.profile ? (totalToday / state.profile.dailyGoal) * 100 : 0;
+  const updateSettings = useCallback((newSettings: Partial<WaterSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
+    
+    if (newSettings.reminderInterval !== undefined) {
+      const newInterval = newSettings.reminderInterval;
+      if (isTimerActive) {
+        setTimeLeft(newInterval * 60);
+      } else if (!isTimerActive && !isReminderActive) {
+        setTimeLeft(newInterval * 60);
+      }
+    }
+  }, [isTimerActive, isReminderActive]);
 
   return {
-    ...state,
-    todayRecords,
+    profile,
     totalToday,
     progress,
-    setProfile,
+    settings,
+    isTimerActive,
+    timeLeft,
+    isReminderActive,
+    loading,
     addWater,
-    resetTodayWater, // Добавляем функцию сброса
+    resetTodayWater,
     updateSettings,
     stopReminder,
     startTimer,

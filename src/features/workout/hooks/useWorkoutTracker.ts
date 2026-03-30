@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useWorkouts } from '@/hooks/useWorkouts';
 
 export type WorkoutSet = {
   reps: number;
@@ -13,94 +15,58 @@ export type WorkoutExercise = {
   notes?: string;
 };
 
-type WorkoutData = {
-  [date: string]: WorkoutExercise[];
-};
-
-const STORAGE_KEY = 'workoutData';
-
 export const useWorkoutTracker = () => {
-  const [workouts, setWorkouts] = useState<WorkoutData>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : {};
-  });
+  const { user } = useAuth();
+  const { 
+    getWorkoutForDate, 
+    saveWorkout, 
+    hasWorkoutOnDate, 
+    loading,
+    refresh 
+  } = useWorkouts();
+  
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Сохраняем в localStorage при изменении
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts));
-  }, [workouts]);
+  const addExerciseToWorkout = useCallback(async (date: Date, exercise: WorkoutExercise) => {
+    if (!user) {
+      console.error('❌ Нет пользователя');
+      return;
+    }
+    console.log('➕ addExerciseToWorkout:', { date, exercise });
+    
+    const current = getWorkoutForDate(date);
+    const updated = [...current, exercise];
+    
+    console.log('📝 Текущие упражнения:', current.length, '→ после добавления:', updated.length);
+    
+    await saveWorkout(date, updated);
+    await refresh();
+  }, [user, getWorkoutForDate, saveWorkout, refresh]);
 
-  // Вспомогательная функция: дата → строка YYYY-MM-DD
-  const dateToKey = (date: Date): string => {
-    return date.toISOString().split('T')[0];
-  };
+  const removeExerciseFromWorkout = useCallback(async (date: Date, exerciseId: string) => {
+    if (!user) return;
+    const current = getWorkoutForDate(date);
+    const updated = current.filter(ex => ex.id !== exerciseId);
+    await saveWorkout(date, updated);
+    await refresh();
+  }, [user, getWorkoutForDate, saveWorkout, refresh]);
 
-  // Получить тренировку на выбранную дату
-  const getWorkoutForDate = (date: Date): WorkoutExercise[] => {
-    const key = dateToKey(date);
-    return workouts[key] || [];
-  };
-
-  // Добавить упражнение в тренировку на выбранную дату
-  const addExerciseToWorkout = (date: Date, exercise: WorkoutExercise) => {
-    const key = dateToKey(date);
-    setWorkouts((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || []), exercise],
-    }));
-  };
-
-  // Удалить упражнение из тренировки на выбранную дату
-  const removeExerciseFromWorkout = (date: Date, exerciseId: string) => {
-    const key = dateToKey(date);
-    setWorkouts((prev) => ({
-      ...prev,
-      [key]: (prev[key] || []).filter((ex) => ex.id !== exerciseId),
-    }));
-  };
-
-  // Обновить упражнение целиком
-  const updateExercise = (date: Date, exerciseId: string, updatedExercise: WorkoutExercise) => {
-    const key = dateToKey(date);
-    setWorkouts((prev) => ({
-      ...prev,
-      [key]: (prev[key] || []).map((ex) =>
-        ex.id === exerciseId ? updatedExercise : ex
-      ),
-    }));
-  };
-
-  // Обновить подходы у упражнения
-  const updateExerciseSets = (
-    date: Date,
-    exerciseId: string,
-    sets: WorkoutSet[]
-  ) => {
-    const key = dateToKey(date);
-    setWorkouts((prev) => ({
-      ...prev,
-      [key]: (prev[key] || []).map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets } : ex
-      ),
-    }));
-  };
-
-  // Проверить, есть ли тренировка на выбранную дату
-  const hasWorkoutOnDate = (date: Date): boolean => {
-    const key = dateToKey(date);
-    return !!workouts[key] && workouts[key].length > 0;
-  };
+  const updateExercise = useCallback(async (date: Date, exerciseId: string, updatedExercise: WorkoutExercise) => {
+    if (!user) return;
+    const current = getWorkoutForDate(date);
+    const updated = current.map(ex => ex.id === exerciseId ? updatedExercise : ex);
+    await saveWorkout(date, updated);
+    await refresh();
+  }, [user, getWorkoutForDate, saveWorkout, refresh]);
 
   return {
-    workouts,
     selectedDate,
     setSelectedDate,
     getWorkoutForDate,
     addExerciseToWorkout,
     removeExerciseFromWorkout,
     updateExercise,
-    updateExerciseSets,
     hasWorkoutOnDate,
+    loading
   };
 };

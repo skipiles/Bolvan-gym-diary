@@ -21,19 +21,18 @@ interface Props {
 export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
   const [customAmount, setCustomAmount] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-  // Звук при нажатии на кнопку
-  const playButtonSound = useInstantSound(
-    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3'
+  const playSound = useInstantSound(
+    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3',
   )
 
   const handlePredefinedAmount = (amount: number) => {
-    playButtonSound()
+    console.log('🔘 Нажата кнопка добавления воды:', amount)
+    playSound()
     onAddWater(amount)
   }
 
   const handleCustomAmount = () => {
-    playButtonSound()
+    playSound()
     const amount = parseInt(customAmount)
     if (amount > 0) {
       onAddWater(amount)
@@ -42,14 +41,20 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
     }
   }
 
-  const handleDialogOpen = () => {
-    playButtonSound()
-    setIsDialogOpen(true)
-  }
-
   return (
-    <Paper sx={{ p: 3, background: 'rgba(255, 255, 255, 0.9)' }}>
-      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+    <Paper
+      sx={{
+        p: 3,
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #C6C6C8',
+      }}
+    >
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{ fontWeight: 600, color: '#000000' }}
+      >
         Добавить воду
       </Typography>
 
@@ -69,17 +74,14 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
             sx={{
               borderColor: 'rgba(0, 122, 255, 0.3)',
               color: '#007AFF',
+              borderRadius: '10px',
               '&:hover': {
                 borderColor: '#007AFF',
                 backgroundColor: 'rgba(0, 122, 255, 0.05)',
               },
-              '&:active': {
-                transform: 'scale(0.95)',
-              },
-              transition: 'all 0.1s ease',
             }}
           >
-            {amount}ml
+            {amount} мл
           </Button>
         ))}
       </Box>
@@ -87,14 +89,12 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
       <Button
         variant="contained"
         fullWidth
-        onClick={handleDialogOpen}
+        onClick={() => setIsDialogOpen(true)}
         sx={{
           background: '#007AFF',
+          borderRadius: '10px',
+          textTransform: 'none',
           '&:hover': { background: '#0056CC' },
-          '&:active': {
-            transform: 'scale(0.98)',
-          },
-          transition: 'all 0.1s ease',
         }}
       >
         Другое количество
@@ -106,7 +106,7 @@ export const WaterControls: React.FC<Props> = ({ onAddWater }) => {
           <TextField
             autoFocus
             type="number"
-            label="Количество (ml)"
+            label="Количество (мл)"
             value={customAmount}
             onChange={(e) => setCustomAmount(e.target.value)}
             fullWidth

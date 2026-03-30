@@ -24,13 +24,12 @@ import { muscleGroups } from '../data/exercises'
 interface SetInput {
   reps: number
   weight: number
-  isBodyweight?: boolean
 }
 
 interface AddSetDialogProps {
   open: boolean
   onClose: () => void
-  onAdd: (sets: SetInput[]) => void
+  onAdd: (sets: SetInput[], useBodyweight: boolean) => void
   exercise: Exercise | null
 }
 
@@ -42,27 +41,18 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
 }) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const [sets, setSets] = useState<SetInput[]>([
-    { reps: 0, weight: 0, isBodyweight: false },
-  ])
-  const [useBodyweight, setUseBodyweight] = useState(
-    exercise?.isBodyweight || false,
-  )
+  const [sets, setSets] = useState<SetInput[]>([{ reps: 0, weight: 0 }])
+  const [useBodyweight, setUseBodyweight] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setSets([{ reps: 0, weight: 0, isBodyweight: useBodyweight }])
+      setSets([{ reps: 0, weight: 0 }])
+      setUseBodyweight(false)
     }
-  }, [open, useBodyweight])
-
-  useEffect(() => {
-    if (exercise) {
-      setUseBodyweight(exercise.isBodyweight || false)
-    }
-  }, [exercise])
+  }, [open])
 
   const handleAddSet = () => {
-    setSets([...sets, { reps: 0, weight: 0, isBodyweight: useBodyweight }])
+    setSets([...sets, { reps: 0, weight: 0 }])
   }
 
   const handleRemoveSet = (index: number) => {
@@ -71,7 +61,7 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
 
   const handleSetChange = (
     index: number,
-    field: 'reps' | 'weight',
+    field: keyof SetInput,
     value: number,
   ) => {
     const updated = [...sets]
@@ -82,7 +72,7 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
   const handleSubmit = () => {
     const validSets = sets.filter((set) => set.reps > 0)
     if (validSets.length > 0) {
-      onAdd(validSets)
+      onAdd(validSets, useBodyweight)
       onClose()
     }
   }
@@ -101,8 +91,8 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
           borderRadius: '20px',
           backgroundColor: '#FFFFFF',
           width: 'auto',
-          minWidth: isMobile ? '280px' : '300px',
-          maxWidth: isMobile ? '90vw' : '360px',
+          minWidth: isMobile ? '280px' : '320px',
+          maxWidth: isMobile ? '90vw' : '400px',
           margin: 2,
         },
       }}
@@ -153,38 +143,38 @@ export const AddSetDialog: React.FC<AddSetDialogProps> = ({
           },
         }}
       >
-        {exercise.isBodyweight && (
-          <FormControlLabel
-            control={
-              <Switch
-                size="small"
-                checked={useBodyweight}
-                onChange={(e) => {
-                  setUseBodyweight(e.target.checked)
-                  setSets(sets.map((set) => ({ ...set, weight: 0 })))
-                }}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#FF3B30',
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#FF3B30',
-                  },
-                }}
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={useBodyweight}
+              onChange={(e) => {
+                setUseBodyweight(e.target.checked)
+                setSets(sets.map((set) => ({ ...set, weight: 0 })))
+              }}
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: '#FF3B30',
+                },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                  backgroundColor: '#FF3B30',
+                },
+              }}
+            />
+          }
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <FitnessCenter
+                fontSize="small"
+                sx={{ color: '#FF3B30', fontSize: '14px' }}
               />
-            }
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <FitnessCenter
-                  fontSize="small"
-                  sx={{ color: '#FF3B30', fontSize: '14px' }}
-                />
-                <Typography variant="caption">Свой вес</Typography>
-              </Box>
-            }
-            sx={{ mb: 1.5 }}
-          />
-        )}
+              <Typography variant="caption">
+                Занятие с собственным весом
+              </Typography>
+            </Box>
+          }
+          sx={{ mb: 1.5 }}
+        />
 
         <Typography
           variant="caption"

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import {
   Box,
   Container,
@@ -8,7 +8,6 @@ import {
   useTheme,
 } from '@mui/material'
 import { useWaterTracker } from '@features/water-tracker/hooks/useWaterTracker'
-import { UserProfileForm } from '@features/water-tracker/components/UserProfileForm'
 import { WaterProgress } from '@features/water-tracker/components/WaterProgress'
 import { WaterControls } from '@features/water-tracker/components/WaterControls'
 import { ReminderTimer } from '@features/water-tracker/components/ReminderTimer'
@@ -25,7 +24,6 @@ export const Water: React.FC = () => {
     isTimerActive,
     timeLeft,
     isReminderActive,
-    setProfile,
     addWater,
     resetTodayWater,
     updateSettings,
@@ -33,11 +31,20 @@ export const Water: React.FC = () => {
     startTimer,
   } = useWaterTracker()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
   }, [])
+
+  useEffect(() => {
+    console.log(
+      '💧 Water component: totalToday =',
+      totalToday,
+      'progress =',
+      progress,
+    )
+  }, [totalToday, progress])
 
   if (!profile) {
     return (
@@ -49,7 +56,7 @@ export const Water: React.FC = () => {
           minHeight: '80vh',
         }}
       >
-        <UserProfileForm onProfileSet={setProfile} />
+        <Typography>Загрузка профиля...</Typography>
       </Box>
     )
   }
@@ -100,7 +107,7 @@ export const Water: React.FC = () => {
         >
           <WaterProgress
             current={totalToday}
-            goal={profile.dailyGoal}
+            goal={profile.daily_water_goal || 2000}
             progress={progress}
             onReset={resetTodayWater}
           />
@@ -149,7 +156,7 @@ export const Water: React.FC = () => {
         <Typography variant="body2" color="text.secondary">
           {totalToday === 0
             ? 'Сегодня еще не было записей'
-            : `Всего выпито: ${totalToday}ml`}
+            : `Всего выпито: ${totalToday} мл`}
         </Typography>
       </Paper>
     </Container>
