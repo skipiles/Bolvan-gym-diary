@@ -29,8 +29,7 @@ export const Register: React.FC = () => {
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { signUp, updateProfile } = useAuth()
+  const { signUp } = useAuth()
   const navigate = useNavigate()
 
   const handleNext = () => {
