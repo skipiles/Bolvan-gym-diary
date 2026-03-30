@@ -1,6 +1,20 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      // Восстановление URL после загрузки приложения (для PWA)
+      ;(function () {
+        var redirect = sessionStorage.redirect
+        delete sessionStorage.redirect
+        if (
+          redirect &&
+          redirect !== location.pathname &&
+          redirect !== '/Bolvan-gym-diary/'
+        ) {
+          history.replaceState(null, null, redirect)
+        }
+      })()
+    </script>
     <meta charset="UTF-8" />
     <title>The Bolvan Gym</title>
     <link rel="icon" type="image/png" href="/titleImage2.png" />
