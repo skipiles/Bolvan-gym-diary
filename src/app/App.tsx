@@ -1,11 +1,10 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { routesConfig } from './providers/ConfigRoute'
 import { iosTheme } from './providers/material/ios-theme'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 
-const router = createBrowserRouter(routesConfig, {
-  basename: import.meta.env.PROD ? '/Bolvan-gym-diary' : '/',
-})
+const router = createHashRouter(routesConfig)
+
 function App() {
   return (
     <ThemeProvider theme={iosTheme}>
