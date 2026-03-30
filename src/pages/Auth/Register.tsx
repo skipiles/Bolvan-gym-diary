@@ -29,7 +29,8 @@ export const Register: React.FC = () => {
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signUp } = useAuth()
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { signUp, updateProfile } = useAuth()
   const navigate = useNavigate()
 
   const handleNext = () => {
@@ -215,7 +216,7 @@ export const Register: React.FC = () => {
           <Typography variant="body2" color="text.secondary">
             Уже есть аккаунт?{' '}
             <Link
-              href="/login"
+              href="#/login"
               sx={{ color: '#FF3B30', textDecoration: 'none' }}
             >
               Войти
