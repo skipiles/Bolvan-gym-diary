@@ -1,31 +1,15 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script>
-      // Восстановление URL после загрузки приложения (для PWA)
-      ;(function () {
-        var redirect = sessionStorage.redirect
-        delete sessionStorage.redirect
-        if (
-          redirect &&
-          redirect !== location.pathname &&
-          redirect !== '/Bolvan-gym-diary/'
-        ) {
-          history.replaceState(null, null, redirect)
-        }
-      })()
-    </script>
     <meta charset="UTF-8" />
     <title>The Bolvan Gym</title>
     <link rel="icon" type="image/png" href="/titleImage2.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <meta name="apple-mobile-web-app-title" content="Bolvan Gym" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link rel="manifest" href="/manifest.json" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <link
       rel="preload"
       href="sounds/layout-click.mp3"
@@ -67,16 +51,6 @@
         audio.src = sound
         audio.preload = 'auto'
       })
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker
-            .register('/Bolvan-gym-diary/sw.js')
-            .then((reg) => console.log('SW registered:', reg))
-            .catch((err) => console.log('SW error:', err))
-        })
-      }
     </script>
   </body>
 </html>
