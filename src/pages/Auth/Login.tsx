@@ -20,7 +20,6 @@ export const Login: React.FC = () => {
   const { signIn, user } = useAuth()
   const navigate = useNavigate()
 
-  // Если уже авторизован, перенаправляем
   React.useEffect(() => {
     if (user) {
       navigate('/')
@@ -96,7 +95,7 @@ export const Login: React.FC = () => {
         <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography variant="body2">
             Нет аккаунта?{' '}
-            <Link href="/register" sx={{ color: '#FF3B30' }}>
+            <Link href="#/register" sx={{ color: '#FF3B30' }}>
               Зарегистрироваться
             </Link>
           </Typography>
