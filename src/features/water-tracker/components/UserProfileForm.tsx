@@ -1,5 +1,12 @@
 import React, { useState } from 'react'
-import { TextField, Button, Typography, Paper } from '@mui/material'
+import {
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Alert,
+  Snackbar,
+} from '@mui/material'
 
 interface Props {
   onProfileSet: (weight: number) => void
@@ -7,16 +14,60 @@ interface Props {
 
 export const UserProfileForm: React.FC<Props> = ({ onProfileSet }) => {
   const [weight, setWeight] = useState('')
+  const [error, setError] = useState('')
+  const [showAlert, setShowAlert] = useState(false)
+
+  const validateWeight = (value: string): string => {
+    if (!value.trim()) {
+      return 'Введите ваш вес'
+    }
+
+    const weightNum = parseFloat(value)
+
+    if (isNaN(weightNum)) {
+      return 'Введите корректное число'
+    }
+
+    if (weightNum < 40) {
+      return 'Вес должен быть не менее 40 кг'
+    }
+
+    if (weightNum > 300) {
+      return 'Вес должен быть не более 300 кг'
+    }
+
+    return ''
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const weightNum = parseFloat(weight)
-    if (weightNum > 0 && weightNum < 300) {
-      onProfileSet(weightNum)
+
+    const validationError = validateWeight(weight)
+
+    if (validationError) {
+      setError(validationError)
+      setShowAlert(true)
+      return
     }
+
+    onProfileSet(parseFloat(weight))
   }
 
-  const calculatedGoal = weight ? Math.round(parseFloat(weight) * 30) : 0
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setWeight(value)
+
+    // Валидация в реальном времени (опционально)
+    const validationError = validateWeight(value)
+    setError(validationError)
+  }
+
+  const handleCloseAlert = () => {
+    setShowAlert(false)
+  }
+
+  const calculatedGoal =
+    weight && !error ? Math.round(parseFloat(weight) * 30) : 0
 
   return (
     <Paper
@@ -41,13 +92,15 @@ export const UserProfileForm: React.FC<Props> = ({ onProfileSet }) => {
           type="number"
           label="Ваш вес (кг)"
           value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          inputProps={{ min: 1, max: 300, step: 0.1 }}
+          onChange={handleWeightChange}
+          // Убираем HTML5 валидацию, чтобы не было браузерных сообщений
+          inputProps={{ step: 0.1 }}
+          error={!!error}
+          helperText={error ? ' ' : 'Диапазон: 40-300 кг'} // Пустой текст при ошибке, чтобы не дублировать
           sx={{ mb: 2 }}
-          required
         />
 
-        {weight && (
+        {weight && !error && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Ваша суточная норма: {calculatedGoal} мл
           </Typography>
@@ -62,6 +115,23 @@ export const UserProfileForm: React.FC<Props> = ({ onProfileSet }) => {
           Сохранить
         </Button>
       </form>
+
+      {/* Кастомное уведомление об ошибке */}
+      <Snackbar
+        open={showAlert}
+        autoHideDuration={6000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity="error"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {error}
+        </Alert>
+      </Snackbar>
     </Paper>
   )
 }

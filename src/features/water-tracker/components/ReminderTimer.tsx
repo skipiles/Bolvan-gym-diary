@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Typography,
@@ -49,7 +49,7 @@ export const ReminderTimer: React.FC<Props> = ({
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const playSound = useInstantSound(
-    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3'
+    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3',
   )
 
   // Функция для форматирования интервала в читаемый вид
@@ -59,15 +59,13 @@ export const ReminderTimer: React.FC<Props> = ({
     const hours = Math.floor(minutes / 60)
     const remainingMinutes = minutes % 60
     if (remainingMinutes === 0) return `${hours} час${hours > 1 ? 'а' : ''}`
-    return `${hours} ч ${remainingMinutes} м`
+    return `${hours} ч ${remainingMinutes} мин`
   }
 
   // Воспроизведение звука при активном напоминании
-  useEffect(() => {
+  React.useEffect(() => {
     if (isReminderActive && soundEnabled) {
-      const audio = new Audio(
-        import.meta.env.BASE_URL + 'sounds/rampage-song.mp3'
-      )
+      const audio = new Audio(import.meta.env.BASE_URL + 'sounds/Sencha.mp3')
       audio.loop = true
       audio.volume = 0.7
 
@@ -83,7 +81,7 @@ export const ReminderTimer: React.FC<Props> = ({
   }, [isReminderActive, soundEnabled])
 
   // Браузерные уведомления
-  useEffect(() => {
+  React.useEffect(() => {
     if (isReminderActive && 'Notification' in window) {
       if (Notification.permission === 'granted') {
         new Notification('💧 Пора пить воду!', {
@@ -289,7 +287,6 @@ export const ReminderTimer: React.FC<Props> = ({
           step={null}
           marks={intervalOptions.map((option) => ({
             value: option,
-            // label: formatIntervalLabel(option),
           }))}
           valueLabelDisplay="auto"
           valueLabelFormat={formatIntervalLabel}
@@ -338,12 +335,46 @@ export const ReminderTimer: React.FC<Props> = ({
         >
           {formatTime(timeLeft)}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-          {isTimerActive ? 'Таймер активен' : 'Таймер остановлен'}
-        </Typography>
+
+        {/* Кнопка запуска таймера */}
+        <Button
+          variant="contained"
+          onClick={onStartTimer}
+          disabled={isTimerActive}
+          sx={{
+            mt: 2,
+            background: '#007AFF',
+            '&:hover': { background: '#0056CC' },
+            textTransform: 'none',
+            borderRadius: '10px',
+            px: 3,
+          }}
+        >
+          {isTimerActive ? 'Таймер активен' : 'Запустить таймер'}
+        </Button>
+
+        {/* Кнопка остановки таймера (показывается только когда таймер активен) */}
+        {isTimerActive && (
+          <Button
+            variant="outlined"
+            onClick={onStopReminder}
+            sx={{
+              mt: 1,
+              color: '#FF3B30',
+              borderColor: '#FF3B30',
+              '&:hover': {
+                borderColor: '#FF3B30',
+                backgroundColor: 'rgba(255, 59, 48, 0.04)',
+              },
+              textTransform: 'none',
+              borderRadius: '10px',
+              px: 3,
+            }}
+          >
+            Остановить таймер
+          </Button>
+        )}
       </Box>
     </Paper>
   )
 }
-
-export default ReminderTimer

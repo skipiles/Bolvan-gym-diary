@@ -27,7 +27,7 @@ export const WaterProgress: React.FC<Props> = ({
 }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
   const playSound = useInstantSound(
-    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3'
+    import.meta.env.BASE_URL + 'sounds/gta5menu.mp3',
   )
 
   const handleReset = () => {
@@ -41,7 +41,7 @@ export const WaterProgress: React.FC<Props> = ({
       <Box
         sx={{
           p: 2,
-          backgroundColor: 'background.paper',
+          backgroundColor: '#FFFFFF',
           borderRadius: '12px',
           border: '1px solid #C6C6C8',
           width: '100%',
@@ -57,7 +57,7 @@ export const WaterProgress: React.FC<Props> = ({
         >
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 600, color: 'text.primary' }}
+            sx={{ fontWeight: 600, color: '#000000' }}
           >
             Прогресс за сегодня
           </Typography>
@@ -85,14 +85,11 @@ export const WaterProgress: React.FC<Props> = ({
             mb: 2,
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{ color: 'primary.main', fontWeight: 700 }}
-          >
-            {current}ml
+          <Typography variant="h4" sx={{ color: '#007AFF', fontWeight: 700 }}>
+            {current} мл
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            из {goal}ml
+            из {goal} мл
           </Typography>
         </Box>
 
@@ -105,7 +102,7 @@ export const WaterProgress: React.FC<Props> = ({
             backgroundColor: '#E5E5EA',
             '& .MuiLinearProgress-bar': {
               borderRadius: 3,
-              backgroundColor: 'primary.main',
+              backgroundColor: '#007AFF',
             },
           }}
         />
@@ -147,7 +144,6 @@ export const WaterProgress: React.FC<Props> = ({
         <DialogActions sx={{ flexDirection: 'column', gap: 1 }}>
           <Button
             onClick={handleReset}
-            color="error"
             fullWidth
             sx={{
               color: '#FF3B30',
