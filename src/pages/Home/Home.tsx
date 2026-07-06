@@ -21,7 +21,6 @@ import {
 } from '@mui/material'
 import { useAuth } from '@/hooks/useAuth'
 import { useWaterTracker } from '@features/water-tracker/hooks/useWaterTracker'
-import { supabase } from '@/lib/supabase'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
 import EditIcon from '@mui/icons-material/Edit'
@@ -29,21 +28,8 @@ import CloseIcon from '@mui/icons-material/Close'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import type { WorkoutSession } from '@/types/workout'
 
-interface WorkoutData {
-  id: string
-  date: string
-  start_time: string
-  end_time: string
-  photo_url: string | null
-  notes: string | null
-  exercises: Array<{
-    id: string
-    name: string
-    muscleGroup: string
-    sets: Array<{ reps: number; weight: number }>
-  }>
-  duration_minutes: number
-}
+// Ключи для localStorage
+const WORKOUTS_STORAGE_KEY = 'bolvan_workouts'
 
 const Home: React.FC = () => {
   const { user, profile, updateProfile } = useAuth()
@@ -58,41 +44,36 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Загрузка тренировок
+  // Загрузка тренировок из localStorage
   useEffect(() => {
-    const loadWorkouts = async () => {
+    const loadWorkouts = () => {
       if (!user) {
         setLoading(false)
         return
       }
 
-      const { data, error } = await supabase
-        .from('workouts_new')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(5)
+      try {
+        const stored = localStorage.getItem(WORKOUTS_STORAGE_KEY)
+        const data = stored ? JSON.parse(stored) : {}
 
-      if (error) {
-        console.error('Ошибка загрузки тренировок:', error)
-        setLoading(false)
-        return
-      }
+        // Преобразуем объект { date: exercises[] } в массив WorkoutSession[]
+        const formatted: WorkoutSession[] = Object.entries(data)
+          .map(([date, exercises]) => ({
+            id: `workout-${date}`,
+            date: date,
+            startTime: '--:--',
+            endTime: '--:--',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            exercises: exercises as any[],
+            durationMinutes: 0,
+            totalVolume: 0,
+          }))
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 5) // Берём только 5 последних
 
-      if (data) {
-        const formatted: WorkoutSession[] = (data as WorkoutData[]).map(
-          (item) => ({
-            id: item.id,
-            date: item.date,
-            startTime: item.start_time,
-            endTime: item.end_time,
-            photoUrl: item.photo_url || undefined,
-            notes: item.notes || undefined,
-            exercises: item.exercises,
-            durationMinutes: item.duration_minutes,
-          }),
-        )
         setWorkouts(formatted)
+      } catch (error) {
+        console.error('Ошибка загрузки тренировок:', error)
       }
       setLoading(false)
     }
@@ -100,21 +81,12 @@ const Home: React.FC = () => {
     loadWorkouts()
   }, [user])
 
-  // Загружаем аватар из профиля
+  // Загружаем аватар из localStorage
   useEffect(() => {
-    const loadAvatar = async () => {
-      if (!user) return
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .single()
-      if (data?.avatar_url) {
-        setAvatarPreview(data.avatar_url)
-      }
+    if (profile?.avatar_url) {
+      setAvatarPreview(profile.avatar_url)
     }
-    loadAvatar()
-  }, [user, profile])
+  }, [profile])
 
   // Заполняем поля редактирования при открытии диалога
   useEffect(() => {
@@ -160,38 +132,16 @@ const Home: React.FC = () => {
 
     setUploadingAvatar(true)
 
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`
-    const filePath = fileName
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file)
-
-    if (uploadError) {
-      console.error('Ошибка загрузки:', uploadError)
-      setUploadingAvatar(false)
-      return
-    }
-
-    const { data: urlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath)
-
-    const avatarUrl = urlData.publicUrl
-
-    // Обновляем профиль
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: avatarUrl })
-      .eq('id', user.id)
-
-    if (updateError) {
-      console.error('Ошибка обновления профиля:', updateError)
-    } else {
+    // Читаем файл как data URL (для локального хранения)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const avatarUrl = reader.result as string
       setAvatarPreview(avatarUrl)
+      // Сохраняем аватар в профиле
+      updateProfile({ avatar_url: avatarUrl })
+      setUploadingAvatar(false)
     }
-    setUploadingAvatar(false)
+    reader.readAsDataURL(file)
   }
 
   const handleSaveProfile = async () => {
@@ -201,25 +151,39 @@ const Home: React.FC = () => {
     const heightNum = editHeight ? parseFloat(editHeight) : null
     const newWaterGoal = weightNum ? Math.round(weightNum * 30) : 2000
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        weight: weightNum,
-        height: heightNum,
-        daily_water_goal: newWaterGoal,
-      })
-      .eq('id', user.id)
+    await updateProfile({
+      weight: weightNum,
+      height: heightNum,
+      daily_water_goal: newWaterGoal,
+    })
 
-    if (!error) {
-      // Обновляем локальный профиль через хук
-      await updateProfile({
-        weight: weightNum,
-        height: heightNum,
-        daily_water_goal: newWaterGoal,
-      })
-      setEditDialogOpen(false)
+    setEditDialogOpen(false)
+  }
+
+  // Получить все тренировки для модалки "Все тренировки"
+  const getAllWorkouts = (): WorkoutSession[] => {
+    try {
+      const stored = localStorage.getItem(WORKOUTS_STORAGE_KEY)
+      const data = stored ? JSON.parse(stored) : {}
+
+      return Object.entries(data)
+        .map(([date, exercises]) => ({
+          id: `workout-${date}`,
+          date: date,
+          startTime: '--:--',
+          endTime: '--:--',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          exercises: exercises as any[],
+          durationMinutes: 0,
+          totalVolume: 0,
+        }))
+        .sort((a, b) => b.date.localeCompare(a.date))
+    } catch {
+      return []
     }
   }
+
+  const allWorkouts = getAllWorkouts()
 
   if (loading) {
     return (
@@ -554,33 +518,47 @@ const Home: React.FC = () => {
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ p: 2, overflowY: 'auto', maxHeight: '60vh' }}>
-          {workouts.map((workout) => (
-            <Paper
-              key={workout.id}
-              sx={{
-                mb: 2,
-                p: 2,
-                borderRadius: '14px',
-                border: '1px solid #C6C6C8',
-              }}
+          {allWorkouts.length === 0 ? (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ textAlign: 'center', py: 3 }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                {workout.date}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {formatTime(workout.startTime)} - {formatTime(workout.endTime)}{' '}
-                • {calculateDuration(workout.startTime, workout.endTime)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {workout.exercises.length} упражнений
-              </Typography>
-              {workout.notes && (
-                <Typography variant="body2" sx={{ mt: 1, color: '#3C3C4399' }}>
-                  {workout.notes}
+              Нет тренировок
+            </Typography>
+          ) : (
+            allWorkouts.map((workout) => (
+              <Paper
+                key={workout.id}
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  borderRadius: '14px',
+                  border: '1px solid #C6C6C8',
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  {workout.date}
                 </Typography>
-              )}
-            </Paper>
-          ))}
+                <Typography variant="body2" color="text.secondary">
+                  {formatTime(workout.startTime)} -{' '}
+                  {formatTime(workout.endTime)} •{' '}
+                  {calculateDuration(workout.startTime, workout.endTime)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {workout.exercises.length} упражнений
+                </Typography>
+                {workout.notes && (
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 1, color: '#3C3C4399' }}
+                  >
+                    {workout.notes}
+                  </Typography>
+                )}
+              </Paper>
+            ))
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button

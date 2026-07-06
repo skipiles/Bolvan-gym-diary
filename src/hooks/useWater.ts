@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
 type WaterLogEntry = {
   amount: number;
   timestamp: string;
 };
+
+const WATER_STORAGE_KEY = 'bolvan_water_logs';
 
 export const useWater = () => {
   const { user, profile } = useAuth();
@@ -19,22 +20,9 @@ export const useWater = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('water_logs')
-      .select('date, total_amount, entries')
-      .eq('user_id', user.id);
-
-    if (!error && data) {
-      const logsMap: Record<string, { total_amount: number; entries: WaterLogEntry[] }> = {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data.forEach((log: any) => {
-        logsMap[log.date] = {
-          total_amount: log.total_amount,
-          entries: log.entries || []
-        };
-      });
-      setWaterLogs(logsMap);
-    }
+    const stored = localStorage.getItem(WATER_STORAGE_KEY);
+    const logs = stored ? JSON.parse(stored) : {};
+    setWaterLogs(logs);
     setLoading(false);
   }, [user]);
 
@@ -52,72 +40,28 @@ export const useWater = () => {
   };
 
   const addWater = async (date: Date, amount: number) => {
-    if (!user) {
-      return { error: new Error('Not authenticated') };
-    }
-
     const dateKey = date.toISOString().split('T')[0];
-    
-    // Получаем текущие данные напрямую из Supabase
-    const { data: existingData } = await supabase
-      .from('water_logs')
-      .select('total_amount, entries')
-      .eq('user_id', user.id)
-      .eq('date', dateKey)
-      .single();
+    const current = getWaterForDate(date);
+    const newTotal = current.total + amount;
+    const newEntries = [...current.entries, { amount, timestamp: new Date().toISOString() }];
 
-    const currentTotal = existingData?.total_amount || 0;
-    const currentEntries = existingData?.entries || [];
-    const newTotal = currentTotal + amount;
-    const newEntries = [...currentEntries, { amount, timestamp: new Date().toISOString() }];
+    const updated = {
+      ...waterLogs,
+      [dateKey]: { total_amount: newTotal, entries: newEntries }
+    };
 
-    const { error: updateError } = await supabase
-      .from('water_logs')
-      .update({
-        total_amount: newTotal,
-        entries: newEntries
-      })
-      .eq('user_id', user.id)
-      .eq('date', dateKey);
-
-    if (updateError && updateError.code === 'PGRST116') {
-      const { error: insertError } = await supabase
-        .from('water_logs')
-        .insert({
-          user_id: user.id,
-          date: dateKey,
-          total_amount: newTotal,
-          entries: newEntries
-        });
-      
-      if (insertError) {
-        return { error: insertError };
-      }
-    } else if (updateError) {
-      return { error: updateError };
-    }
-
-    // Обновляем локальное состояние
-    await fetchWaterLogs();
+    localStorage.setItem(WATER_STORAGE_KEY, JSON.stringify(updated));
+    setWaterLogs(updated);
     return { data: null, error: null };
   };
 
   const resetWaterForDate = async (date: Date) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
     const dateKey = date.toISOString().split('T')[0];
-
-    const { error } = await supabase
-      .from('water_logs')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('date', dateKey);
-
-    if (!error) {
-      await fetchWaterLogs();
-    }
-
-    return { error };
+    const updated = { ...waterLogs };
+    delete updated[dateKey];
+    localStorage.setItem(WATER_STORAGE_KEY, JSON.stringify(updated));
+    setWaterLogs(updated);
+    return { error: null };
   };
 
   const getProgress = (date: Date): number => {

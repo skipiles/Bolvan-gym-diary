@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { User } from '@supabase/supabase-js';
+
+const STORAGE_KEY = 'bolvan_user';
 
 export type Profile = {
   id: string;
   email: string;
   username: string;
   full_name: string | null;
+  avatar_url: string | null;
   weight: number | null;
   height: number | null;
   daily_water_goal: number;
@@ -15,107 +17,87 @@ export type Profile = {
 };
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (!error && data) {
-      setProfile(data as Profile);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setUser({ id: data.id, email: data.email });
+      setProfile(data);
     }
     setLoading(false);
-  };
+  }, []); // <--- ПУСТОЙ МАССИВ ЗАВИСИМОСТЕЙ ОБЯЗАТЕЛЕН
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
-  };
-
-  const signUp = async (
-    email: string, 
-    password: string, 
-    username: string, 
-    fullName: string | null,
-    weight: number | null,
-    height: number | null,
-    dailyWaterGoal: number
-  ) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username, fullName, weight, height, dailyWaterGoal }
+   
+  const signIn = async (email: string) => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.email === email) {
+        setUser({ id: data.id, email: data.email });
+        setProfile(data);
+        return { data: { user: data }, error: null };
       }
-    });
-    
-    if (data?.user && !error) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email,
-        username,
-        full_name: fullName,
-        weight,
-        height,
-        daily_water_goal: dailyWaterGoal
-      });
     }
-    
-    return { data, error };
+
+    const newUser: Profile = {
+      id: `user-${Date.now()}`,
+      email,
+      username: email.split('@')[0],
+      full_name: email.split('@')[0],
+      avatar_url: null,
+      weight: null,
+      height: null,
+      daily_water_goal: 2000,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+    setUser({ id: newUser.id, email: newUser.email });
+    setProfile(newUser);
+    return { data: { user: newUser }, error: null };
+  };
+
+  const signUp = async (email: string, _password: string, username: string, fullName?: string | null, weight?: number | null, height?: number | null, dailyWaterGoal?: number) => {
+    const newUser: Profile = {
+      id: `user-${Date.now()}`,
+      email,
+      username: username || email.split('@')[0],
+      full_name: fullName || null,
+      avatar_url: null,
+      weight: weight || null,
+      height: height || null,
+      daily_water_goal: dailyWaterGoal || (weight ? Math.round(weight * 30) : 2000),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+    setUser({ id: newUser.id, email: newUser.email });
+    setProfile(newUser);
+    return { data: { user: newUser }, error: null };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+    setProfile(null);
+    return { error: null };
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return { error: new Error('Not authenticated') };
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return { error: new Error('No user') };
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
-
-    if (!error && data) {
-      setProfile(data as Profile);
-    }
-    return { data, error };
+    const current = JSON.parse(saved);
+    const updated = { ...current, ...updates, updated_at: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    setProfile(updated);
+    return { data: updated, error: null };
   };
 
   return {
