@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
 type ExerciseSet = {
@@ -14,6 +13,8 @@ type ExerciseType = {
   sets: ExerciseSet[];
 };
 
+const WORKOUTS_STORAGE_KEY = 'bolvan_workouts';
+
 export const useWorkouts = () => {
   const { user } = useAuth();
   const [workouts, setWorkouts] = useState<Record<string, ExerciseType[]>>({});
@@ -26,24 +27,9 @@ export const useWorkouts = () => {
       return;
     }
 
-    console.log('🔄 fetchWorkouts: загрузка тренировок для пользователя:', user.id);
-    
-    const { data, error } = await supabase
-      .from('workouts')
-      .select('date, exercises')
-      .eq('user_id', user.id);
-
-    if (!error && data) {
-      const workoutsMap: Record<string, ExerciseType[]> = {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data.forEach((workout: any) => {
-        workoutsMap[workout.date] = workout.exercises || [];
-      });
-      setWorkouts(workoutsMap);
-      console.log('✅ fetchWorkouts: загружено', Object.keys(workoutsMap).length, 'дней');
-    } else if (error) {
-      console.error('❌ fetchWorkouts ошибка:', error);
-    }
+    const stored = localStorage.getItem(WORKOUTS_STORAGE_KEY);
+    const data = stored ? JSON.parse(stored) : {};
+    setWorkouts(data);
     setLoading(false);
   }, [user]);
 
@@ -57,38 +43,25 @@ export const useWorkouts = () => {
   };
 
   const saveWorkout = async (date: Date, exercises: ExerciseType[]) => {
-    if (!user) {
-      console.error('❌ Нет пользователя');
-      return { error: new Error('Not authenticated') };
-    }
-
     const dateKey = date.toISOString().split('T')[0];
-    console.log('💾 saveWorkout:', { dateKey, exercisesCount: exercises.length, userId: user.id });
-
-    const { error } = await supabase
-      .from('workouts')
-      .upsert({
-        user_id: user.id,
-        date: dateKey,
-        exercises: exercises
-      }, {
-        onConflict: 'user_id,date'
-      });
-
-    if (error) {
-      console.error('❌ Ошибка сохранения тренировки:', error);
-      return { error };
-    }
-
-    console.log('✅ Тренировка сохранена успешно');
-    await fetchWorkouts();
+    const updated = { ...workouts, [dateKey]: exercises };
+    localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(updated));
+    setWorkouts(updated);
     return { data: null, error: null };
+  };
+
+  const deleteWorkoutForDate = async (date: Date) => {
+    const dateKey = date.toISOString().split('T')[0];
+    const updated = { ...workouts };
+    delete updated[dateKey];
+    localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(updated));
+    setWorkouts(updated);
+    return { error: null };
   };
 
   const hasWorkoutOnDate = (date: Date): boolean => {
     const key = date.toISOString().split('T')[0];
-    const exercises = workouts[key];
-    return !!exercises && exercises.length > 0;
+    return !!workouts[key] && workouts[key].length > 0;
   };
 
   return {
@@ -96,6 +69,7 @@ export const useWorkouts = () => {
     loading,
     getWorkoutForDate,
     saveWorkout,
+    deleteWorkoutForDate,
     hasWorkoutOnDate,
     refresh: fetchWorkouts
   };

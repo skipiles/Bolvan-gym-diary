@@ -15,17 +15,22 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { PlayArrow, Close, Delete } from '@mui/icons-material'
+import { PlayArrow, Close, Delete, Edit } from '@mui/icons-material'
 import { ActiveWorkout } from './ActiveWorkout'
-import type { WorkoutSession } from '@/types/workout'
-import { supabase } from '@/lib/supabase'
+import type { WorkoutSession, WorkoutDraft } from '@/types/workout'
 import { useAuth } from '@/hooks/useAuth'
+import { useWorkoutDraft } from '@/hooks/useWorkoutDraft'
 import { WorkoutCalendar } from '@features/workout/components/WorkoutCalendar'
+
+// Ключ для localStorage
+const WORKOUTS_STORAGE_KEY = 'bolvan_workouts'
 
 const Workout: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { user } = useAuth()
+  const { loadDraft, deleteDraft } = useWorkoutDraft()
+
   const [isWorkoutActive, setIsWorkoutActive] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutSession[]>([])
@@ -35,6 +40,9 @@ const Workout: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null)
+  const [hasDraft, setHasDraft] = useState(false)
+  const [resumeDialogOpen, setResumeDialogOpen] = useState(false)
+  const [savedDraft, setSavedDraft] = useState<WorkoutDraft | null>(null)
   const [snackbar, setSnackbar] = useState<{
     open: boolean
     message: string
@@ -45,37 +53,37 @@ const Workout: React.FC = () => {
     severity: 'success',
   })
 
+  // Загрузка тренировок из localStorage
   const loadWorkoutHistory = useCallback(async () => {
     if (!user) {
       setLoading(false)
       return
     }
 
-    const { data, error } = await supabase
-      .from('workouts_new')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
+    try {
+      const stored = localStorage.getItem(WORKOUTS_STORAGE_KEY)
+      const data = stored ? JSON.parse(stored) : {}
 
-    if (error) {
-      console.error('Ошибка загрузки тренировок:', error)
-      setLoading(false)
-      return
-    }
+      // Преобразуем объект { date: exercises[] } в массив WorkoutSession[]
+      const formatted: WorkoutSession[] = Object.entries(data).map(
+        ([date, exercises]) => ({
+          id: `workout-${date}`,
+          date: date,
+          startTime: '--:--',
+          endTime: '--:--',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          exercises: exercises as any[],
+          durationMinutes: 0,
+          totalVolume: 0,
+        }),
+      )
 
-    if (data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formatted: WorkoutSession[] = data.map((item: any) => ({
-        id: item.id,
-        date: item.date,
-        startTime: item.start_time,
-        endTime: item.end_time,
-        photoUrl: item.photo_url || undefined,
-        notes: item.notes || undefined,
-        exercises: item.exercises,
-        durationMinutes: item.duration_minutes,
-      }))
+      // Сортируем по дате (новые сверху)
+      formatted.sort((a, b) => b.date.localeCompare(a.date))
+
       setWorkoutHistory(formatted)
+    } catch (error) {
+      console.error('Ошибка загрузки тренировок:', error)
     }
     setLoading(false)
   }, [user])
@@ -83,6 +91,16 @@ const Workout: React.FC = () => {
   useEffect(() => {
     loadWorkoutHistory()
   }, [loadWorkoutHistory])
+
+  // Проверка наличия черновика на выбранную дату
+  useEffect(() => {
+    const checkDraft = async () => {
+      const draft = await loadDraft(selectedDate)
+      setHasDraft(!!draft)
+      setSavedDraft(draft)
+    }
+    checkDraft()
+  }, [selectedDate, loadDraft])
 
   const hasWorkoutOnDate = (date: Date): boolean => {
     const dateKey = date.toISOString().split('T')[0]
@@ -94,37 +112,50 @@ const Workout: React.FC = () => {
     return workoutHistory.filter((w) => w.date === dateKey)
   }
 
-  const startWorkout = () => {
+  const startNewWorkout = () => {
     setIsWorkoutActive(true)
+  }
+
+  const resumeWorkout = () => {
+    setResumeDialogOpen(false)
+    setIsWorkoutActive(true)
+  }
+
+  const cancelResume = () => {
+    setResumeDialogOpen(false)
+    deleteDraft(selectedDate)
+    setHasDraft(false)
+    startNewWorkout()
   }
 
   const saveWorkout = async (workout: WorkoutSession) => {
     if (!user) return
 
-    const { error } = await supabase.from('workouts_new').insert({
-      user_id: user.id,
-      date: workout.date,
-      start_time: workout.startTime,
-      end_time: workout.endTime,
-      photo_url: workout.photoUrl,
-      notes: workout.notes,
-      exercises: workout.exercises,
-      duration_minutes: workout.durationMinutes,
-      total_volume: workout.totalVolume,
-    })
+    try {
+      const stored = localStorage.getItem(WORKOUTS_STORAGE_KEY)
+      const allWorkouts = stored ? JSON.parse(stored) : {}
 
-    if (!error) {
+      // Сохраняем тренировку по дате
+      allWorkouts[workout.date] = workout.exercises
+
+      localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(allWorkouts))
+
       setIsWorkoutActive(false)
       await loadWorkoutHistory()
+
+      // Удаляем черновик после сохранения
+      await deleteDraft(new Date(workout.date))
+
       setSnackbar({
         open: true,
         message: 'Тренировка сохранена!',
         severity: 'success',
       })
-    } else {
+    } catch (error) {
+      console.error('Ошибка сохранения:', error)
       setSnackbar({
         open: true,
-        message: 'Ошибка сохранения',
+        message: 'Ошибка сохранения тренировки',
         severity: 'error',
       })
     }
@@ -133,21 +164,29 @@ const Workout: React.FC = () => {
   const deleteWorkout = async () => {
     if (!user || !workoutToDelete) return
 
-    const { error } = await supabase
-      .from('workouts_new')
-      .delete()
-      .eq('id', workoutToDelete)
-      .eq('user_id', user.id)
+    try {
+      const stored = localStorage.getItem(WORKOUTS_STORAGE_KEY)
+      const allWorkouts = stored ? JSON.parse(stored) : {}
 
-    if (!error) {
+      // Находим дату по id
+      const dateToDelete = workoutToDelete.replace('workout-', '')
+      delete allWorkouts[dateToDelete]
+
+      localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(allWorkouts))
+
       await loadWorkoutHistory()
       setSnackbar({
         open: true,
         message: 'Тренировка удалена',
         severity: 'success',
       })
-    } else {
-      setSnackbar({ open: true, message: 'Ошибка удаления', severity: 'error' })
+    } catch (error) {
+      console.error('Ошибка удаления:', error)
+      setSnackbar({
+        open: true,
+        message: 'Ошибка удаления тренировки',
+        severity: 'error',
+      })
     }
     setDeleteConfirmOpen(false)
     setWorkoutToDelete(null)
@@ -187,13 +226,16 @@ const Workout: React.FC = () => {
     return (
       <ActiveWorkout
         workout={{
-          id: Date.now().toString(),
-          startTime: new Date(),
-          exercises: [],
+          id: savedDraft?.id || Date.now().toString(),
+          startTime: savedDraft?.start_time
+            ? new Date(`2000-01-01T${savedDraft.start_time}`)
+            : new Date(),
+          exercises: savedDraft?.exercises || [],
           date: selectedDate,
         }}
         onSave={saveWorkout}
         onCancel={() => setIsWorkoutActive(false)}
+        draftData={savedDraft || undefined}
       />
     )
   }
@@ -261,23 +303,39 @@ const Workout: React.FC = () => {
                 year: 'numeric',
               })}
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<PlayArrow />}
-              onClick={startWorkout}
-              size={isMobile ? 'small' : 'medium'}
-              sx={{
-                background: '#FF3B30',
-                '&:hover': { background: '#D63027' },
-                borderRadius: '12px',
-                textTransform: 'none',
-              }}
-            >
-              Начать
-            </Button>
+
+            {hasDraft ? (
+              <Button
+                variant="contained"
+                startIcon={<PlayArrow />}
+                onClick={() => setResumeDialogOpen(true)}
+                sx={{
+                  background: '#34C759',
+                  '&:hover': { background: '#2DA84E' },
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                }}
+              >
+                Продолжить
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                startIcon={<PlayArrow />}
+                onClick={startNewWorkout}
+                sx={{
+                  background: '#FF3B30',
+                  '&:hover': { background: '#D63027' },
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                }}
+              >
+                Новая
+              </Button>
+            )}
           </Box>
 
-          {workoutsOnSelectedDate.length === 0 ? (
+          {workoutsOnSelectedDate.length === 0 && !hasDraft ? (
             <Paper
               sx={{
                 p: isMobile ? 3 : 4,
@@ -289,96 +347,189 @@ const Workout: React.FC = () => {
                 Нет тренировок в этот день
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Нажмите "Начать" чтобы добавить
+                Нажмите "Новая" чтобы начать
               </Typography>
             </Paper>
           ) : (
-            workoutsOnSelectedDate.map((workout) => (
-              <Paper
-                key={workout.id}
-                sx={{
-                  mb: 2,
-                  borderRadius: '14px',
-                  overflow: 'hidden',
-                  border: '1px solid #C6C6C8',
-                }}
-              >
-                <Box
-                  onClick={() => setExpandedWorkout(workout)}
+            <>
+              {hasDraft && savedDraft && (
+                <Paper
                   sx={{
-                    p: isMobile ? 1.5 : 2,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
+                    mb: 2,
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    border: '2px solid #34C759',
+                    opacity: 0.9,
                   }}
                 >
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      variant="subtitle1"
+                  <Box sx={{ p: 1.5, bgcolor: '#34C75910' }}>
+                    <Box
                       sx={{
-                        fontWeight: 600,
-                        color: '#000',
-                        fontSize: isMobile ? '14px' : '16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                       }}
                     >
-                      {workout.date}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ fontSize: isMobile ? '12px' : '14px' }}
-                    >
-                      {formatTime(workout.startTime)} -{' '}
-                      {formatTime(workout.endTime)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {workout.exercises.length} упражнений •{' '}
-                      {calculateDuration(workout.startTime, workout.endTime)}
-                    </Typography>
-                    {workout.notes && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: '#34C759', fontWeight: 600 }}
+                        >
+                          ⏳ Черновик
+                        </Typography>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600, color: '#000' }}
+                        >
+                          {selectedDate.toLocaleDateString('ru-RU')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {savedDraft.start_time || '—'} •{' '}
+                          {savedDraft.exercises.length} упражнений
+                        </Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setResumeDialogOpen(true)}
+                        sx={{ color: '#34C759', borderColor: '#34C759' }}
+                      >
+                        Продолжить
+                      </Button>
+                    </Box>
+                  </Box>
+                </Paper>
+              )}
+
+              {workoutsOnSelectedDate.map((workout) => (
+                <Paper
+                  key={workout.id}
+                  sx={{
+                    mb: 2,
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    border: '1px solid #C6C6C8',
+                  }}
+                >
+                  <Box
+                    onClick={() => setExpandedWorkout(workout)}
+                    sx={{
+                      p: isMobile ? 1.5 : 2,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
                       <Typography
-                        variant="body2"
+                        variant="subtitle1"
                         sx={{
-                          mt: 0.5,
-                          color: '#3C3C4399',
-                          fontSize: isMobile ? '11px' : '13px',
+                          fontWeight: 600,
+                          color: '#000',
+                          fontSize: isMobile ? '14px' : '16px',
                         }}
                       >
-                        {truncateNotes(workout.notes, 40)}
+                        {workout.date}
                       </Typography>
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setWorkoutToDelete(workout.id)
-                        setDeleteConfirmOpen(true)
-                      }}
-                      size="small"
-                      sx={{ color: '#FF3B30' }}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: isMobile ? '12px' : '14px' }}
+                      >
+                        {formatTime(workout.startTime)} -{' '}
+                        {formatTime(workout.endTime)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {workout.exercises.length} упражнений •{' '}
+                        {calculateDuration(workout.startTime, workout.endTime)}
+                      </Typography>
+                      {workout.notes && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 0.5,
+                            color: '#3C3C4399',
+                            fontSize: isMobile ? '11px' : '13px',
+                          }}
+                        >
+                          {truncateNotes(workout.notes, 40)}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
                     >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                    <Typography
-                      variant="button"
-                      sx={{
-                        color: '#34C759',
-                        fontSize: isMobile ? '12px' : '14px',
-                      }}
-                    >
-                      Показать
-                    </Typography>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // TODO: редактирование тренировки
+                        }}
+                        size="small"
+                        sx={{ color: '#007AFF' }}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setWorkoutToDelete(workout.id)
+                          setDeleteConfirmOpen(true)
+                        }}
+                        size="small"
+                        sx={{ color: '#FF3B30' }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                      <Typography
+                        variant="button"
+                        sx={{
+                          color: '#34C759',
+                          fontSize: isMobile ? '12px' : '14px',
+                        }}
+                      >
+                        Детали
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              </Paper>
-            ))
+                </Paper>
+              ))}
+            </>
           )}
         </Box>
       </Box>
 
-      {/* Остальные диалоги без изменений... */}
+      {/* Диалог продолжения тренировки */}
+      <Dialog
+        open={resumeDialogOpen}
+        onClose={() => setResumeDialogOpen(false)}
+      >
+        <DialogTitle>Продолжить тренировку?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            У вас есть несохранённая тренировка на{' '}
+            {selectedDate.toLocaleDateString('ru-RU')}.
+            {savedDraft?.exercises.length} упражнений уже добавлено.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Хотите продолжить или начать заново?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelResume} sx={{ color: '#FF3B30' }}>
+            Начать заново
+          </Button>
+          <Button
+            onClick={resumeWorkout}
+            variant="contained"
+            sx={{ bgcolor: '#34C759' }}
+          >
+            Продолжить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог деталей тренировки */}
       <Dialog
         open={!!expandedWorkout}
         onClose={() => setExpandedWorkout(null)}
@@ -392,7 +543,6 @@ const Workout: React.FC = () => {
           },
         }}
       >
-        {/* Содержимое диалога без изменений */}
         {expandedWorkout && (
           <>
             <DialogTitle
@@ -538,8 +688,16 @@ const Workout: React.FC = () => {
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
               <Button
+                onClick={() => {
+                  setExpandedWorkout(null)
+                }}
+                sx={{ color: '#007AFF' }}
+              >
+                Редактировать
+              </Button>
+              <Button
                 onClick={() => setExpandedWorkout(null)}
-                sx={{ color: '#FF3B30', fontSize: isMobile ? '13px' : '14px' }}
+                sx={{ color: '#FF3B30' }}
               >
                 Закрыть
               </Button>
@@ -548,6 +706,7 @@ const Workout: React.FC = () => {
         )}
       </Dialog>
 
+      {/* Диалог подтверждения удаления */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}

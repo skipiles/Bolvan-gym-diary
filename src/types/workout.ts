@@ -8,6 +8,7 @@ export type WorkoutExercise = {
   name: string;
   muscleGroup: string;
   sets: ExerciseSet[];
+  notes?: string;
 };
 
 export type WorkoutSession = {
@@ -28,3 +29,30 @@ export type ActiveWorkout = {
   exercises: WorkoutExercise[];
   date: Date;
 };
+
+// Черновик тренировки
+export type WorkoutDraft = {
+  id: string;
+  user_id: string;
+  date: string;
+  start_time: string | null;
+  end_time: string | null;
+  photo_url: string | null;
+  notes: string | null;
+  exercises: WorkoutExercise[];
+  created_at: string;
+  updated_at: string;
+};
+
+// Тип для пропсов ActiveWorkout
+export interface ActiveWorkoutProps {
+  workout: {
+    id: string;
+    startTime: Date;
+    exercises: WorkoutExercise[];
+    date: Date;
+  };
+  onSave: (workout: WorkoutSession) => void | Promise<void>;
+  onCancel: () => void;
+  draftData?: WorkoutDraft | null;
+}

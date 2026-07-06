@@ -28,17 +28,9 @@ export const useWorkoutTracker = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const addExerciseToWorkout = useCallback(async (date: Date, exercise: WorkoutExercise) => {
-    if (!user) {
-      console.error('❌ Нет пользователя');
-      return;
-    }
-    console.log('➕ addExerciseToWorkout:', { date, exercise });
-    
+    if (!user) return;
     const current = getWorkoutForDate(date);
     const updated = [...current, exercise];
-    
-    console.log('📝 Текущие упражнения:', current.length, '→ после добавления:', updated.length);
-    
     await saveWorkout(date, updated);
     await refresh();
   }, [user, getWorkoutForDate, saveWorkout, refresh]);
