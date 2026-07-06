@@ -32,7 +32,9 @@ export const useAuth = () => {
   }, []); // <--- ПУСТОЙ МАССИВ ЗАВИСИМОСТЕЙ ОБЯЗАТЕЛЕН
 
    
-  const signIn = async (email: string) => {
+   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const signIn = async (email: string, _password?: string) => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const data = JSON.parse(saved);

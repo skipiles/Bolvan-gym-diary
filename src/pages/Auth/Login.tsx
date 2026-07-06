@@ -31,13 +31,22 @@ export const Login: React.FC = () => {
     setError('')
     setLoading(true)
 
-    const { error: signInError } = await signIn(email, password)
+    try {
+      const result = await signIn(email, password)
 
-    if (signInError) {
-      setError(signInError.message)
+      if (result.error) {
+        // Приводим error к типу с полем message
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorMessage = (result.error as any)?.message || 'Ошибка входа'
+        setError(errorMessage)
+        setLoading(false)
+      } else {
+        navigate('/')
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (err) {
+      setError('Произошла ошибка при входе')
       setLoading(false)
-    } else {
-      navigate('/')
     }
   }
 

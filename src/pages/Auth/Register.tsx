@@ -56,33 +56,43 @@ export const Register: React.FC = () => {
     setError('')
     setLoading(true)
 
-    const weightNum = weight ? parseFloat(weight) : null
-    const heightNum = height ? parseFloat(height) : null
-    const dailyWaterGoal = weightNum ? Math.round(weightNum * 30) : 2000
+    try {
+      const weightNum = weight ? parseFloat(weight) : null
+      const heightNum = height ? parseFloat(height) : null
+      const dailyWaterGoal = weightNum ? Math.round(weightNum * 30) : 2000
 
-    const { error: signUpError } = await signUp(
-      email,
-      password,
-      username,
-      fullName,
-      weightNum,
-      heightNum,
-      dailyWaterGoal,
-    )
+      const result = await signUp(
+        email,
+        password,
+        username,
+        fullName || null,
+        weightNum,
+        heightNum,
+        dailyWaterGoal,
+      )
 
-    if (signUpError) {
-      setError(signUpError.message)
+      if (result.error) {
+        const errorMessage =
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (result.error as any)?.message || 'Ошибка регистрации'
+        setError(errorMessage)
+        setLoading(false)
+        return
+      }
+
+      setSuccessMessage(
+        'Регистрация успешна! Теперь вы можете войти в аккаунт.',
+      )
+
+      setTimeout(() => {
+        navigate('#/login')
+      }, 3000)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (err) {
+      setError('Произошла ошибка при регистрации')
+    } finally {
       setLoading(false)
-      return
     }
-
-    setSuccessMessage('Регистрация успешна! Теперь вы можете войти в аккаунт.')
-
-    setTimeout(() => {
-      navigate('/login')
-    }, 3000)
-
-    setLoading(false)
   }
 
   return (
